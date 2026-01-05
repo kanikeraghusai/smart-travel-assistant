@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Assistant - Smart Travel Assistant</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <button onclick="window.location.href='result.html'" class="btn-back">
+                ← Back to Results
+            </button>
+        </div>
+    </nav>
+    
+    <div class="chat-container">
+        <div class="chat-box">
+            <div class="chat-header">
+                <svg class="chat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                </svg>
+                <div>
+                    <h2>AI Travel Assistant</h2>
+                    <p>Ask me anything about your destination</p>
+                </div>
+            </div>
+            
+            <div id="chatMessages" class="chat-messages">
+                <div class="chat-message bot-message">
+                    <div class="message-bubble">
+                        Welcome! I can help you with information about:
+                        <ul>
+                            <li>Safety and security</li>
+                            <li>Cleanliness standards</li>
+                            <li>Crowd levels</li>
+                            <li>Prices and costs</li>
+                            <li>Weather conditions</li>
+                        </ul>
+                        What would you like to know?
+                    </div>
+                </div>
+            </div>
+            
+            <div class="chat-input-container">
+                <input 
+                    type="text" 
+                    id="chatInput" 
+                    placeholder="Type your question..."
+                    class="chat-input"
+                >
+                <button onclick="sendMessage()" class="btn btn-primary">Send</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="js/chat.js"></script>
+    <script>
+        // Check if user is logged in
+        const user = JSON.parse(localStorage.getItem('currentUser'));
+        if (!user) {
+            window.location.href = 'index.html';
+        }
+        
+        // Allow Enter key to send message
+        document.getElementById('chatInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html>

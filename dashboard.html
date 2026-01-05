@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Smart Travel Assistant</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                    <circle cx="12" cy="10" r="3"></circle>
+                </svg>
+                <span>Smart Travel</span>
+            </div>
+            <div class="nav-user">
+                <span id="userName">Welcome, User</span>
+                <button onclick="logout()" class="btn-logout">Logout</button>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="dashboard-container">
+        <h1 class="dashboard-title">Where would you like to go?</h1>
+        
+        <div class="search-cards">
+            <div class="search-card">
+                <div class="card-header">
+                    <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <path d="m21 21-4.35-4.35"></path>
+                    </svg>
+                    <h2>Search Place</h2>
+                </div>
+                <p class="card-description">Discover amazing destinations across India</p>
+                
+                <form id="placeSearchForm" onsubmit="return false;">
+                    <input 
+                        type="text" 
+                        id="placeQuery" 
+                        placeholder="Enter place name (e.g., Delhi, Goa, Mumbai)"
+                        class="search-input"
+                        required
+                    >
+                    <button type="button" onclick="searchPlace()" class="btn btn-primary">Search Place</button>
+                </form>
+            </div>
+            
+            <div class="search-card">
+                <div class="card-header">
+                    <svg class="card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
+                    </svg>
+                    <h2>Find Route</h2>
+                </div>
+                <p class="card-description">Plan your journey from start to destination</p>
+                
+                <form id="routeSearchForm" onsubmit="return false;">
+                    <input 
+                        type="text" 
+                        id="routeFrom" 
+                        placeholder="From (e.g., Delhi)"
+                        class="search-input"
+                        required
+                    >
+                    <input 
+                        type="text" 
+                        id="routeTo" 
+                        placeholder="To (e.g., Agra)"
+                        class="search-input"
+                        required
+                    >
+                    <button type="button" onclick="searchRoute()" class="btn btn-success">Find Route</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="spinner"></div>
+        <p>Searching...</p>
+    </div>
+    
+    <script>
+        // Check if user is logged in
+        const user = JSON.parse(localStorage.getItem('currentUser'));
+        if (!user) {
+            window.location.href = 'index.html';
+        } else {
+            document.getElementById('userName').textContent = `Welcome, ${user.name}`;
+        }
+        
+        function logout() {
+            localStorage.removeItem('currentUser');
+            window.location.href = 'index.html';
+        }
+
+        // Initialize reviews with sample data
+        function initReviews() {
+            if (!localStorage.getItem('travelReviews')) {
+                const sampleReviews = [
+                    { place: 'Delhi', rating: 4, text: 'Clean and well-maintained monuments. Safe for tourists but can be crowded during peak hours.', user: 'Demo User' },
+                    { place: 'Goa', rating: 5, text: 'Beautiful beaches, very safe and friendly locals. Great food and nightlife!', user: 'Demo User' },
+                    { place: 'Mumbai', rating: 3, text: 'Crowded but exciting city. Be careful with belongings in busy areas.', user: 'Demo User' },
+                    { place: 'Jaipur', rating: 5, text: 'Amazing historical sites! Clean and safe. Locals are very friendly and helpful.', user: 'Demo User' },
+                    { place: 'Agra', rating: 4, text: 'Taj Mahal is stunning! Can be crowded but worth visiting. Guides are helpful.', user: 'Demo User' },
+                    { place: 'Kerala', rating: 5, text: 'Peaceful and beautiful backwaters. Very clean and safe. Excellent food!', user: 'Demo User' },
+                    { place: 'Bangalore', rating: 4, text: 'Modern city with great weather. Safe but traffic can be bad. Nice cafes and parks.', user: 'Demo User' }
+                ];
+                localStorage.setItem('travelReviews', JSON.stringify(sampleReviews));
+            }
+        }
+
+        function getReviews(place) {
+            initReviews();
+            const reviews = JSON.parse(localStorage.getItem('travelReviews') || '[]');
+            return reviews.filter(r => r.place.toLowerCase() === place.toLowerCase());
+        }
+
+        function calculateScore(reviews) {
+            if (!reviews || reviews.length === 0) return 60;
+            
+            let score = 50;
+            let totalRating = 0;
+            
+            reviews.forEach(r => {
+                totalRating += r.rating;
+                if (r.rating >= 4) score += 10;
+                else if (r.rating <= 2) score -= 10;
+                
+                const text = r.text.toLowerCase();
+                if (text.includes('safe')) score += 5;
+                if (text.includes('clean')) score += 5;
+                if (text.includes('beautiful')) score += 5;
+                if (text.includes('amazing')) score += 5;
+                if (text.includes('friendly')) score += 5;
+                if (text.includes('crowded')) score -= 5;
+                if (text.includes('dirty')) score -= 8;
+                if (text.includes('unsafe')) score -= 10;
+            });
+            
+            const avgRating = totalRating / reviews.length;
+            score += (avgRating - 3) * 5;
+            
+            return Math.min(Math.max(Math.round(score), 0), 100);
+        }
+
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return Math.round(R * c);
+        }
+
+        async function searchPlace() {
+            const query = document.getElementById('placeQuery').value.trim();
+            if (!query) {
+                alert('Please enter a place name');
+                return;
+            }
+            
+            const loading = document.getElementById('loadingOverlay');
+            loading.style.display = 'flex';
+            
+            try {
+                console.log('Searching for:', query);
+                
+                // Fetch place data
+                const placeUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)},India&format=json&limit=1`;
+                console.log('Fetching from:', placeUrl);
+                
+                const placeRes = await fetch(placeUrl);
+                const placeData = await placeRes.json();
+                
+                console.log('Place data:', placeData);
+                
+                if (!placeData || placeData.length === 0) {
+                    alert('Place not found. Try: Delhi, Goa, Mumbai, Jaipur');
+                    loading.style.display = 'none';
+                    return;
+                }
+                
+                const place = placeData[0];
+                
+                // Fetch Wikipedia
+                let description = 'No description available.';
+                try {
+                    const wikiRes = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(query)}`);
+                    const wikiData = await wikiRes.json();
+                    if (wikiData.extract) description = wikiData.extract;
+                } catch (e) {
+                    console.log('Wiki error:', e);
+                }
+                
+                // Get reviews and score
+                const reviews = getReviews(query);
+                const aiScore = calculateScore(reviews);
+                
+                console.log('Reviews:', reviews);
+                console.log('AI Score:', aiScore);
+                
+                // Save result
+                const result = {
+                    query: query,
+                    name: place.display_name,
+                    lat: place.lat,
+                    lon: place.lon,
+                    description: description,
+                    aiScore: aiScore,
+                    type: 'place'
+                };
+                
+                localStorage.setItem('searchResult', JSON.stringify(result));
+                console.log('Saved result:', result);
+                
+                // Redirect
+                window.location.href = 'result.html';
+                
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Search failed: ' + error.message);
+                loading.style.display = 'none';
+            }
+        }
+
+        async function searchRoute() {
+            const from = document.getElementById('routeFrom').value.trim();
+            const to = document.getElementById('routeTo').value.trim();
+            
+            if (!from || !to) {
+                alert('Please enter both locations');
+                return;
+            }
+            
+            const loading = document.getElementById('loadingOverlay');
+            loading.style.display = 'flex';
+            
+            try {
+                // Fetch both places
+                const fromRes = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(from)},India&format=json&limit=1`);
+                const fromData = await fromRes.json();
+                
+                const toRes = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(to)},India&format=json&limit=1`);
+                const toData = await toRes.json();
+                
+                if (!fromData || fromData.length === 0 || !toData || toData.length === 0) {
+                    alert('Location not found. Check spelling.');
+                    loading.style.display = 'none';
+                    return;
+                }
+                
+                const fromPlace = fromData[0];
+                const toPlace = toData[0];
+                
+                // Get description
+                let description = 'No description available.';
+                try {
+                    const wikiRes = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(to)}`);
+                    const wikiData = await wikiRes.json();
+                    if (wikiData.extract) description = wikiData.extract;
+                } catch (e) {}
+                
+                // Calculate distance
+                const distance = calculateDistance(
+                    parseFloat(fromPlace.lat), parseFloat(fromPlace.lon),
+                    parseFloat(toPlace.lat), parseFloat(toPlace.lon)
+                );
+                
+                const reviews = getReviews(to);
+                const aiScore = calculateScore(reviews);
+                
+                // Save result
+                const result = {
+                    query: to,
+                    name: `Route: ${from} → ${to}`,
+                    lat: toPlace.lat,
+                    lon: toPlace.lon,
+                    description: `Distance: ${distance} km\n\nAbout ${to}:\n${description}`,
+                    aiScore: aiScore,
+                    type: 'route',
+                    from: from,
+                    to: to,
+                    distance: `${distance} km`
+                };
+                
+                localStorage.setItem('searchResult', JSON.stringify(result));
+                window.location.href = 'result.html';
+                
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Route search failed: ' + error.message);
+                loading.style.display = 'none';
+            }
+        }
+
+        // Initialize reviews on load
+        initReviews();
+    </script>
+</body>
+</html>

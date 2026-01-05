@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Write Review - Smart Travel Assistant</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <button onclick="window.location.href='result.html'" class="btn-back">
+                ← Back to Results
+            </button>
+        </div>
+    </nav>
+    
+    <div class="review-container">
+        <div class="review-box">
+            <h1>Share Your Experience</h1>
+            <p id="reviewSubtitle" class="subtitle">Help others by sharing your thoughts</p>
+            
+            <form id="reviewForm">
+                <div class="form-group">
+                    <label>Rating</label>
+                    <div class="rating-input">
+                        <span class="star-btn" data-rating="1">★</span>
+                        <span class="star-btn" data-rating="2">★</span>
+                        <span class="star-btn" data-rating="3">★</span>
+                        <span class="star-btn" data-rating="4">★</span>
+                        <span class="star-btn" data-rating="5">★</span>
+                    </div>
+                    <input type="hidden" id="rating" value="5" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>Your Review</label>
+                    <textarea 
+                        id="reviewText" 
+                        placeholder="Share your experience... (mention if it was safe, clean, crowded, etc.)"
+                        rows="6"
+                        required
+                    ></textarea>
+                </div>
+                
+                <button type="submit" class="btn btn-success btn-large">Submit Review</button>
+            </form>
+        </div>
+    </div>
+    
+    <script src="js/review.js"></script>
+    <script>
+        // Check if user is logged in
+        const user = JSON.parse(localStorage.getItem('currentUser'));
+        if (!user) {
+            window.location.href = 'index.html';
+        }
+        
+        // Get search data
+        const searchData = JSON.parse(localStorage.getItem('searchResult'));
+        if (!searchData) {
+            window.location.href = 'dashboard.html';
+        }
+        
+        document.getElementById('reviewSubtitle').textContent = `Help others by sharing your thoughts about ${searchData.query}`;
+        
+        // Star rating interaction
+        const stars = document.querySelectorAll('.star-btn');
+        stars.forEach(star => {
+            star.addEventListener('click', function() {
+                const rating = this.getAttribute('data-rating');
+                document.getElementById('rating').value = rating;
+                
+                stars.forEach((s, index) => {
+                    if (index < rating) {
+                        s.classList.add('active');
+                    } else {
+                        s.classList.remove('active');
+                    }
+                });
+            });
+        });
+        
+        // Set all stars active by default (5 stars)
+        stars.forEach(s => s.classList.add('active'));
+        
+        // Handle form submission
+        document.getElementById('reviewForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const rating = document.getElementById('rating').value;
+            const text = document.getElementById('reviewText').value;
+            
+            if (text.trim()) {
+                addReview(searchData.query, parseInt(rating), text, user.name);
+                alert('Review submitted successfully!');
+                window.location.href = 'result.html';
+            } else {
+                alert('Please write a review');
+            }
+        });
+    </script>
+</body>
+</html>

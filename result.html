@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Results - Smart Travel Assistant</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <button onclick="window.location.href='dashboard.html'" class="btn-back">
+                ← Back to Dashboard
+            </button>
+            <span id="userName"></span>
+        </div>
+    </nav>
+    
+    <div class="result-container">
+        <div class="result-card">
+            <h1 id="placeName" class="place-title">Loading...</h1>
+            
+            <div class="score-section">
+                <div class="ai-score">
+                    <span class="score-label">AI Score</span>
+                    <span id="aiScore" class="score-value">--</span>
+                    <span class="score-max">/100</span>
+                </div>
+                <div id="starRating" class="star-rating"></div>
+            </div>
+            
+            <div id="recommendation" class="recommendation-badge"></div>
+            
+            <div class="info-section">
+                <h2>About</h2>
+                <p id="placeDescription">Loading information...</p>
+            </div>
+            
+            <div class="coords-grid">
+                <div class="coord-box">
+                    <p class="coord-label">Latitude</p>
+                    <p id="latitude" class="coord-value">--</p>
+                </div>
+                <div class="coord-box">
+                    <p class="coord-label">Longitude</p>
+                    <p id="longitude" class="coord-value">--</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="action-buttons">
+            <button onclick="window.location.href='chat.html'" class="btn btn-primary">
+                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                </svg>
+                Ask AI Assistant
+            </button>
+            
+            <button onclick="window.location.href='review.html'" class="btn btn-success">
+                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                </svg>
+                Write Review
+            </button>
+        </div>
+        
+        <div id="reviewsSection" class="reviews-section">
+            <h2>User Reviews</h2>
+            <div id="reviewsList" class="reviews-list"></div>
+        </div>
+    </div>
+    
+    <script>
+        console.log('Result page loaded');
+        
+        // Check if user is logged in
+        const user = JSON.parse(localStorage.getItem('currentUser'));
+        if (!user) {
+            console.log('No user found, redirecting to login');
+            window.location.href = 'index.html';
+        } else {
+            document.getElementById('userName').textContent = user.name;
+        }
+        
+        // Load search result
+        const searchData = JSON.parse(localStorage.getItem('searchResult'));
+        console.log('Search data:', searchData);
+        
+        if (!searchData) {
+            console.log('No search data, redirecting to dashboard');
+            alert('No search results found. Please search again.');
+            window.location.href = 'dashboard.html';
+        } else {
+            // Display results
+            document.getElementById('placeName').textContent = searchData.name;
+            document.getElementById('latitude').textContent = searchData.lat;
+            document.getElementById('longitude').textContent = searchData.lon;
+            
+            // Format description
+            const descElement = document.getElementById('placeDescription');
+            descElement.style.whiteSpace = 'pre-line';
+            descElement.textContent = searchData.description || 'No description available.';
+            
+            // Display AI Score
+            const score = searchData.aiScore;
+            document.getElementById('aiScore').textContent = score;
+            
+            // Star rating
+            const stars = Math.round(score / 20);
+            let starHTML = '';
+            for (let i = 0; i < 5; i++) {
+                starHTML += `<span class="star ${i < stars ? 'filled' : ''}">★</span>`;
+            }
+            document.getElementById('starRating').innerHTML = starHTML;
+            
+            // Recommendation badge
+            let recHTML = '';
+            if (score >= 70) {
+                recHTML = '<div class="badge badge-success">✓ Highly Recommended - Great place to visit!</div>';
+            } else if (score >= 40) {
+                recHTML = '<div class="badge badge-warning">⚠ Moderately Recommended - Check reviews carefully</div>';
+            } else {
+                recHTML = '<div class="badge badge-danger">⚠ Not Highly Recommended - Consider alternatives</div>';
+            }
+            document.getElementById('recommendation').innerHTML = recHTML;
+            
+            // Get reviews
+            function getReviews(place) {
+                const reviews = JSON.parse(localStorage.getItem('travelReviews') || '[]');
+                return reviews.filter(r => r.place.toLowerCase() === place.toLowerCase());
+            }
+            
+            // Load and display reviews
+            const reviews = getReviews(searchData.query);
+            console.log('Reviews found:', reviews);
+            
+            if (reviews.length > 0) {
+                let reviewsHTML = '';
+                reviews.forEach(review => {
+                    let reviewStars = '';
+                    for (let i = 0; i < 5; i++) {
+                        reviewStars += `<span class="star ${i < review.rating ? 'filled' : ''}">★</span>`;
+                    }
+                    
+                    reviewsHTML += `
+                        <div class="review-item">
+                            <div class="review-header">
+                                <div class="review-stars">${reviewStars}</div>
+                                <span class="review-user">by ${review.user}</span>
+                            </div>
+                            <p class="review-text">${review.text}</p>
+                        </div>
+                    `;
+                });
+                document.getElementById('reviewsList').innerHTML = reviewsHTML;
+            } else {
+                document.getElementById('reviewsList').innerHTML = '<p class="no-reviews">No reviews yet. Be the first to review!</p>';
+            }
+        }
+    </script>
+</body>
+</html>
